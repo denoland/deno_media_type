@@ -1,0 +1,26 @@
+[package]
+name = "deno_media_type"
+version = "0.0.1"
+edition = "2021"
+description = "Media type used in Deno"
+homepage = "https://deno.land/"
+repository = "https://github.com/denoland/deno_media_type"
+documentation = "https://docs.rs/deno_media_type"
+authors = ["the Deno authors"]
+license = "MIT"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = ["module_specifier"]
+module_specifier = ["data-url", "url"]
+
+[dependencies]
+serde = { version = "1.0.130", features = ["derive", "rc"] }
+data-url = { version = "0.2.0", optional = true }
+url = { version = "2.3.1", optional = true }
+
+[dev-dependencies]
+pretty_assertions = "1.0.0"
+serde_json = { version = "1.0.67", features = ["preserve_order"] }
