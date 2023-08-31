@@ -191,7 +191,7 @@ impl MediaType {
       "text/jscript" => map_js_like_extension(specifier, Self::Jsx),
       "text/jsx" => Self::Jsx,
       "text/tsx" => Self::Tsx,
-      "application/json" | "text/json" => Self::Json,
+      "application/json" | "text/json" | "application/geo+json" => Self::Json,
       "application/wasm" => Self::Wasm,
       // Handle plain and possibly webassembly
       "text/plain" | "application/octet-stream"
@@ -227,6 +227,7 @@ impl MediaType {
           Some("mjs") => Self::Mjs,
           Some("cjs") => Self::Cjs,
           Some("json") => Self::Json,
+          Some("geojson") => Self::Json,
           Some("wasm") => Self::Wasm,
           Some("tsbuildinfo") => Self::TsBuildInfo,
           Some("map") => Self::SourceMap,
@@ -482,6 +483,7 @@ mod tests {
       ("foo/bar.cjs", MediaType::Cjs),
       ("foo/bar.jsx", MediaType::Jsx),
       ("foo/bar.json", MediaType::Json),
+      ("foo/bar.geojson", MediaType::Json),
       ("foo/bar.wasm", MediaType::Wasm),
       ("foo/.tsbuildinfo", MediaType::TsBuildInfo),
       ("foo/.TSBUILDINFO", MediaType::TsBuildInfo),
