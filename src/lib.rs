@@ -218,6 +218,8 @@ impl MediaType {
         }
       },
       Some(ext) => {
+        // using eq_ignore_ascii_case with if/elses seems to be ~40ns
+        // slower here, so continue to use to_lowercase()
         let lowercase_str = ext.to_lowercase();
         match lowercase_str.as_str() {
           "ts" => map_typescript_like(path, Self::TypeScript, Self::Dts),
