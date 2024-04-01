@@ -727,6 +727,7 @@ mod tests {
     assert_eq!(MediaType::Unknown.to_string(), "Unknown");
   }
 
+  #[cfg(feature = "module_specifier")]
   #[test]
   fn test_url_path_like_file_stem() {
     let url = ModuleSpecifier::parse("file:///.test").unwrap();
@@ -737,6 +738,7 @@ mod tests {
     assert_eq!((&url).file_stem(), None);
   }
 
+  #[cfg(feature = "module_specifier")]
   #[test]
   fn test_url_path_like_extension() {
     let url = ModuleSpecifier::parse("file:///.test").unwrap();
