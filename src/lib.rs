@@ -1,5 +1,8 @@
 // Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.
 
+#![deny(clippy::print_stderr)]
+#![deny(clippy::print_stdout)]
+
 use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
@@ -216,7 +219,6 @@ impl MediaType {
       },
       Some(ext) => {
         let lowercase_str = ext.to_lowercase();
-        eprintln!("STR: {}", lowercase_str);
         match lowercase_str.as_str() {
           "ts" => map_typescript_like(path, Self::TypeScript, Self::Dts),
           "mts" => map_typescript_like(path, Self::Mts, Self::Dmts),
