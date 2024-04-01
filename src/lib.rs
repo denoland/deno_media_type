@@ -210,10 +210,10 @@ impl MediaType {
       None => match path.file_name() {
         None => Self::Unknown,
         Some(file_name) => {
-          let lowercase_str = file_name.to_lowercase();
-          match lowercase_str.as_str() {
-            ".tsbuildinfo" => Self::TsBuildInfo,
-            _ => Self::Unknown,
+          if file_name.eq_ignore_ascii_case(".tsbuildinfo") {
+            Self::TsBuildInfo
+          } else {
+            Self::Unknown
           }
         }
       },
