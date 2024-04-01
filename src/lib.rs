@@ -6,9 +6,6 @@ use std::fmt;
 use std::path::Path;
 
 #[cfg(feature = "module_specifier")]
-use std::path::PathBuf;
-
-#[cfg(feature = "module_specifier")]
 type ModuleSpecifier = url::Url;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -34,22 +31,20 @@ pub enum MediaType {
 /// Definition files don't have separate content types and so we have to "guess"
 /// at what they are meant to be.
 fn map_typescript_like(
-  path: &Path,
+  path: impl PathLike,
   base_type: MediaType,
   definition_type: MediaType,
 ) -> MediaType {
   match path.file_stem() {
     None => base_type,
-    Some(os_str) => {
-      if let Some(file_stem) = os_str.to_str() {
-        // .ts files that contain .d. in the file name are always considered a typescript declaration file.
-        // See: https://github.com/microsoft/TypeScript/issues/53319#issuecomment-1474174018
-        if file_stem.ends_with(".d")
-          || (path.to_string_lossy().ends_with(".ts")
-            && file_stem.contains(".d."))
-        {
-          return definition_type;
-        }
+    Some(file_stem) => {
+      // .ts files that contain .d. in the file name are always considered a typescript declaration file.
+      // See: https://github.com/microsoft/TypeScript/issues/53319#issuecomment-1474174018
+      if file_stem.ends_with(".d")
+        || (path.ext().map(|ext| ext == "ts").unwrap_or(false)
+          && file_stem.contains(".d."))
+      {
+        return definition_type;
       }
       base_type
     }
@@ -204,32 +199,37 @@ impl MediaType {
   }
 
   pub fn from_path(path: &Path) -> Self {
-    match path.extension() {
+    Self::from_path_like(path)
+  }
+
+  fn from_path_like(path: impl PathLike) -> Self {
+    match path.ext() {
       None => match path.file_name() {
         None => Self::Unknown,
-        Some(os_str) => {
-          let lowercase_str = os_str.to_str().map(|s| s.to_lowercase());
-          match lowercase_str.as_deref() {
-            Some(".tsbuildinfo") => Self::TsBuildInfo,
+        Some(file_name) => {
+          let lowercase_str = file_name.to_lowercase();
+          match lowercase_str.as_str() {
+            ".tsbuildinfo" => Self::TsBuildInfo,
             _ => Self::Unknown,
           }
         }
       },
-      Some(os_str) => {
-        let lowercase_str = os_str.to_str().map(|s| s.to_lowercase());
-        match lowercase_str.as_deref() {
-          Some("ts") => map_typescript_like(path, Self::TypeScript, Self::Dts),
-          Some("mts") => map_typescript_like(path, Self::Mts, Self::Dmts),
-          Some("cts") => map_typescript_like(path, Self::Cts, Self::Dcts),
-          Some("tsx") => Self::Tsx,
-          Some("js") => Self::JavaScript,
-          Some("jsx") => Self::Jsx,
-          Some("mjs") => Self::Mjs,
-          Some("cjs") => Self::Cjs,
-          Some("json") => Self::Json,
-          Some("wasm") => Self::Wasm,
-          Some("tsbuildinfo") => Self::TsBuildInfo,
-          Some("map") => Self::SourceMap,
+      Some(ext) => {
+        let lowercase_str = ext.to_lowercase();
+        eprintln!("STR: {}", lowercase_str);
+        match lowercase_str.as_str() {
+          "ts" => map_typescript_like(path, Self::TypeScript, Self::Dts),
+          "mts" => map_typescript_like(path, Self::Mts, Self::Dmts),
+          "cts" => map_typescript_like(path, Self::Cts, Self::Dcts),
+          "tsx" => Self::Tsx,
+          "js" => Self::JavaScript,
+          "jsx" => Self::Jsx,
+          "mjs" => Self::Mjs,
+          "cjs" => Self::Cjs,
+          "json" => Self::Json,
+          "wasm" => Self::Wasm,
+          "tsbuildinfo" => Self::TsBuildInfo,
+          "map" => Self::SourceMap,
           _ => Self::Unknown,
         }
       }
@@ -246,8 +246,7 @@ impl MediaType {
     use data_url::DataUrl;
 
     if specifier.scheme() != "data" {
-      let path = specifier_to_path(specifier);
-      Self::from_path(&path)
+      Self::from_path_like(specifier)
     } else if let Ok(data_url) = DataUrl::process(specifier.as_str()) {
       Self::from_content_type(specifier, data_url.mime_type().to_string())
     } else {
@@ -295,53 +294,20 @@ impl fmt::Display for MediaType {
   }
 }
 
-#[cfg(feature = "module_specifier")]
-#[cfg(not(target_arch = "wasm32"))]
-fn specifier_to_path(specifier: &ModuleSpecifier) -> PathBuf {
-  if let Ok(path) = specifier.to_file_path() {
-    path
-  } else {
-    specifier_path_to_path(specifier)
-  }
-}
-
-#[cfg(feature = "module_specifier")]
-#[cfg(target_arch = "wasm32")]
-fn specifier_to_path(specifier: &ModuleSpecifier) -> PathBuf {
-  specifier_path_to_path(specifier)
-}
-
-#[cfg(feature = "module_specifier")]
-fn specifier_path_to_path(specifier: &ModuleSpecifier) -> PathBuf {
-  let path = specifier.path();
-  if path.is_empty() {
-    if let Some(domain) = specifier.domain() {
-      // ex. deno://lib.deno.d.ts
-      PathBuf::from(domain)
-    } else {
-      PathBuf::from("")
-    }
-  } else {
-    PathBuf::from(path)
-  }
-}
-
 /// Used to augment media types by using the path part of a module specifier to
 /// resolve to a more accurate media type.
 #[cfg(feature = "module_specifier")]
 fn map_js_like_extension(
-  specifier: &ModuleSpecifier,
+  path: &ModuleSpecifier,
   default: MediaType,
 ) -> MediaType {
-  let path = specifier_to_path(specifier);
-  match path.extension() {
+  match path.ext() {
     None => default,
-    Some(os_str) => match os_str.to_str() {
-      None => default,
-      Some("jsx") => MediaType::Jsx,
-      Some("mjs") => MediaType::Mjs,
-      Some("cjs") => MediaType::Cjs,
-      Some("tsx") => MediaType::Tsx,
+    Some(ext) => match ext {
+      "jsx" => MediaType::Jsx,
+      "mjs" => MediaType::Mjs,
+      "cjs" => MediaType::Cjs,
+      "tsx" => MediaType::Tsx,
       // This preserves legacy behavior, where if a file is served with a
       // content type of `application/javascript`, but it ends only with a `.ts`
       // we will assume that it is JavaScript and not TypeScript, but if it ends
@@ -349,25 +315,88 @@ fn map_js_like_extension(
       //
       // This handles situations where the file is transpiled on the server and
       // is explicitly providing a media type.
-      Some("ts") => map_typescript_like(&path, default, MediaType::Dts),
-      Some("mts") => {
+      "ts" => map_typescript_like(path, default, MediaType::Dts),
+      "mts" => {
         let base_type = if default == MediaType::JavaScript {
           MediaType::Mjs
         } else {
           MediaType::Mts
         };
-        map_typescript_like(&path, base_type, MediaType::Dmts)
+        map_typescript_like(path, base_type, MediaType::Dmts)
       }
-      Some("cts") => {
+      "cts" => {
         let base_type = if default == MediaType::JavaScript {
           MediaType::Cjs
         } else {
           MediaType::Cts
         };
-        map_typescript_like(&path, base_type, MediaType::Dcts)
+        map_typescript_like(path, base_type, MediaType::Dcts)
       }
-      Some(_) => default,
+      _ => default,
     },
+  }
+}
+
+/// Used to reduce allocations when doing MediaType operations on Urls.
+trait PathLike {
+  fn ext(&self) -> Option<&str>;
+  fn file_name(&self) -> Option<&str>;
+  fn file_stem(&self) -> Option<&str>;
+}
+
+impl<'a> PathLike for &'a Path {
+  fn ext(&self) -> Option<&str> {
+    Path::extension(self).and_then(|ext| ext.to_str())
+  }
+
+  fn file_name(&self) -> Option<&str> {
+    Path::file_name(self).and_then(|os_str| os_str.to_str())
+  }
+
+  fn file_stem(&self) -> Option<&str> {
+    Path::file_stem(self).and_then(|os_str| os_str.to_str())
+  }
+}
+
+#[cfg(feature = "module_specifier")]
+impl<'a> PathLike for &'a url::Url {
+  fn ext(&self) -> Option<&str> {
+    let file_name = self.file_name()?;
+    let period_index = file_name.rfind('.')?;
+    if period_index == 0 {
+      None
+    } else {
+      Some(&file_name[period_index + 1..])
+    }
+  }
+
+  fn file_name(&self) -> Option<&str> {
+    let path = self.path();
+    let path = if self.path().is_empty() {
+      // ex. deno://lib.deno.d.ts
+      self.domain()?
+    } else {
+      path
+    };
+    let path = path.trim_end_matches('/');
+    if path.is_empty() {
+      None
+    } else {
+      match path.rfind('/') {
+        Some(last_slash_index) => Some(&path[last_slash_index + 1..]),
+        None => Some(path),
+      }
+    }
+  }
+
+  fn file_stem(&self) -> Option<&str> {
+    let file_name = self.file_name()?;
+    let period_index = file_name.rfind('.')?;
+    if period_index == 0 {
+      Some(file_name)
+    } else {
+      Some(&file_name[..period_index])
+    }
   }
 }
 
@@ -383,8 +412,9 @@ mod tests {
   /// Taken from Cargo
   /// https://github.com/rust-lang/cargo/blob/af307a38c20a753ec60f0ad18be5abed3db3c9ac/src/cargo/util/paths.rs#L60-L85
   #[cfg(feature = "module_specifier")]
-  fn normalize_path<P: AsRef<Path>>(path: P) -> PathBuf {
+  fn normalize_path<P: AsRef<Path>>(path: P) -> std::path::PathBuf {
     use std::path::Component;
+    use std::path::PathBuf;
 
     let mut components = path.as_ref().components().peekable();
     let mut ret =
@@ -528,7 +558,12 @@ mod tests {
 
     for (specifier, expected) in fixtures {
       let actual = resolve_url_or_path(specifier);
-      assert_eq!(MediaType::from_specifier(&actual), expected);
+      assert_eq!(
+        MediaType::from_specifier(&actual),
+        expected,
+        "specifier: {}",
+        specifier
+      );
 
       assert_eq!(
         MediaType::from_specifier_and_headers(&actual, None),
@@ -690,5 +725,27 @@ mod tests {
     assert_eq!(MediaType::TsBuildInfo.to_string(), "TsBuildInfo");
     assert_eq!(MediaType::SourceMap.to_string(), "SourceMap");
     assert_eq!(MediaType::Unknown.to_string(), "Unknown");
+  }
+
+  #[test]
+  fn test_url_path_like_file_stem() {
+    let url = ModuleSpecifier::parse("file:///.test").unwrap();
+    assert_eq!((&url).file_stem(), Some(".test"));
+    let url = ModuleSpecifier::parse("file:///.test.other").unwrap();
+    assert_eq!((&url).file_stem(), Some(".test"));
+    let url = ModuleSpecifier::parse("file:///").unwrap();
+    assert_eq!((&url).file_stem(), None);
+  }
+
+  #[test]
+  fn test_url_path_like_extension() {
+    let url = ModuleSpecifier::parse("file:///.test").unwrap();
+    assert_eq!((&url).ext(), None);
+    let url = ModuleSpecifier::parse("file:///.test.other").unwrap();
+    assert_eq!((&url).ext(), Some("other"));
+    let url = ModuleSpecifier::parse("file:///").unwrap();
+    assert_eq!((&url).ext(), None);
+    let url = ModuleSpecifier::parse("file:///.").unwrap();
+    assert_eq!((&url).ext(), None);
   }
 }
