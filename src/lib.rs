@@ -166,11 +166,14 @@ impl MediaType {
     specifier: &ModuleSpecifier,
     content_type: S,
   ) -> Self {
-    match content_type.as_ref().split(';').collect::<Vec<&str>>()[0]
-      .trim()
-      .to_lowercase()
+    let first_part = content_type
       .as_ref()
-    {
+      .split(';')
+      .next()
+      .unwrap()
+      .trim()
+      .to_lowercase();
+    match first_part.as_str() {
       "application/typescript"
       | "text/typescript"
       | "video/vnd.dlna.mpeg-tts"
