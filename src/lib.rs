@@ -689,11 +689,7 @@ mod tests {
         "text/jscript",
         MediaType::Jsx,
       ),
-      (
-        "https://deno.land/x/mod.jsx",
-        "text/css",
-        MediaType::Css,
-      ),
+      ("https://deno.land/x/mod.jsx", "text/css", MediaType::Css),
       (
         "https://deno.land/x/mod.jsx",
         "application/json",
