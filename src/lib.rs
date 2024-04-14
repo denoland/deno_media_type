@@ -24,6 +24,7 @@ pub enum MediaType {
   Dmts,
   Dcts,
   Tsx,
+  Css,
   Json,
   Wasm,
   TsBuildInfo,
@@ -72,6 +73,7 @@ impl MediaType {
       Self::Dmts => ".d.mts",
       Self::Dcts => ".d.cts",
       Self::Tsx => ".tsx",
+      Self::Css => ".css",
       Self::Json => ".json",
       // TypeScript doesn't have an "unknown", so we will treat WASM as JS for
       // mapping purposes, though in reality, it is unlikely to ever be passed
@@ -110,6 +112,7 @@ impl MediaType {
       Self::Dmts => Some("text/typescript"),
       Self::Dcts => Some("text/typescript"),
       Self::Tsx => Some("text/tsx"),
+      Self::Css => Some("text/css"),
       Self::Json => Some("application/json"),
       Self::Wasm => Some("application/wasm"),
       Self::TsBuildInfo => Some("application/json"),
@@ -130,6 +133,7 @@ impl MediaType {
       | Self::Mts
       | Self::Cts
       | Self::Tsx
+      | Self::Css
       | Self::Json
       | Self::Wasm
       | Self::TsBuildInfo
@@ -194,6 +198,7 @@ impl MediaType {
       "text/tsx" => Self::Tsx,
       "application/json" | "text/json" => Self::Json,
       "application/wasm" => Self::Wasm,
+      "text/css" => Self::Css,
       // Handle plain and possibly webassembly
       "text/plain" | "application/octet-stream"
         if specifier.scheme() != "data" =>
@@ -233,6 +238,7 @@ impl MediaType {
           "jsx" => Self::Jsx,
           "mjs" => Self::Mjs,
           "cjs" => Self::Cjs,
+          "css" => Self::Css,
           "json" => Self::Json,
           "wasm" => Self::Wasm,
           "tsbuildinfo" => Self::TsBuildInfo,
@@ -291,6 +297,7 @@ impl fmt::Display for MediaType {
       Self::Dmts => "Dmts",
       Self::Dcts => "Dcts",
       Self::Tsx => "TSX",
+      Self::Css => "Css",
       Self::Json => "Json",
       Self::Wasm => "Wasm",
       Self::TsBuildInfo => "TsBuildInfo",
@@ -518,12 +525,15 @@ mod tests {
       ("foo/bar.mjs", MediaType::Mjs),
       ("foo/bar.cjs", MediaType::Cjs),
       ("foo/bar.jsx", MediaType::Jsx),
+      ("foo/bar.css", MediaType::Css),
       ("foo/bar.json", MediaType::Json),
       ("foo/bar.wasm", MediaType::Wasm),
       ("foo/.tsbuildinfo", MediaType::TsBuildInfo),
       ("foo/.TSBUILDINFO", MediaType::TsBuildInfo),
       ("foo/bar.js.map", MediaType::SourceMap),
       ("foo/bar.txt", MediaType::Unknown),
+      ("foo/bar.css", MediaType::Css),
+      ("foo/bar.json", MediaType::Json),
     ];
 
     for (specifier, expected) in fixtures {
@@ -558,6 +568,8 @@ mod tests {
       ("https://deno.land/x/mod.d.cts", MediaType::Dcts),
       ("https://deno.land/x/mod.js", MediaType::JavaScript),
       ("https://deno.land/x/mod.txt", MediaType::Unknown),
+      ("https://deno.land/x/mod.css", MediaType::Css),
+      ("https://deno.land/x/mod.json", MediaType::Json),
       ("data:application/typescript;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::TypeScript),
       ("data:application/javascript;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::JavaScript),
       ("data:text/plain;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::Unknown),
@@ -677,6 +689,12 @@ mod tests {
         "text/jscript",
         MediaType::Jsx,
       ),
+      ("https://deno.land/x/mod.jsx", "text/css", MediaType::Css),
+      (
+        "https://deno.land/x/mod.jsx",
+        "application/json",
+        MediaType::Json,
+      ),
     ];
 
     for (specifier, content_type, expected) in fixtures {
@@ -707,6 +725,7 @@ mod tests {
     assert_eq!(json!(MediaType::Dmts), json!("Dmts"));
     assert_eq!(json!(MediaType::Dcts), json!("Dcts"));
     assert_eq!(json!(MediaType::Tsx), json!("TSX"));
+    assert_eq!(json!(MediaType::Css), json!("Css"));
     assert_eq!(json!(MediaType::Json), json!("Json"));
     assert_eq!(json!(MediaType::Wasm), json!("Wasm"));
     assert_eq!(json!(MediaType::TsBuildInfo), json!("TsBuildInfo"));
@@ -727,6 +746,7 @@ mod tests {
     assert_eq!(MediaType::Dmts.to_string(), "Dmts");
     assert_eq!(MediaType::Dcts.to_string(), "Dcts");
     assert_eq!(MediaType::Tsx.to_string(), "TSX");
+    assert_eq!(MediaType::Css.to_string(), "Css");
     assert_eq!(MediaType::Json.to_string(), "Json");
     assert_eq!(MediaType::Wasm.to_string(), "Wasm");
     assert_eq!(MediaType::TsBuildInfo.to_string(), "TsBuildInfo");
