@@ -142,6 +142,32 @@ impl MediaType {
     }
   }
 
+  /// Returns true if this media type provides types inherently.
+  ///
+  /// Examples are TypeScript, TSX, or DTS files. Wasm and JSON files are also
+  /// considered typed.
+  pub fn is_typed(&self) -> bool {
+    match self {
+      Self::TypeScript
+      | Self::Mts
+      | Self::Cts
+      | Self::Dts
+      | Self::Dmts
+      | Self::Dcts
+      | Self::Tsx
+      | Self::Json
+      | Self::Wasm => true,
+      Self::JavaScript
+      | Self::Jsx
+      | Self::Mjs
+      | Self::Cjs
+      | Self::Css
+      | Self::TsBuildInfo
+      | Self::SourceMap
+      | Self::Unknown => false,
+    }
+  }
+
   #[cfg(feature = "module_specifier")]
   pub fn from_specifier_and_headers(
     specifier: &ModuleSpecifier,
