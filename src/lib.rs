@@ -142,6 +142,29 @@ impl MediaType {
     }
   }
 
+  /// If the media type can be emitted to JavaScript.
+  pub fn is_emittable(&self) -> bool {
+    match self {
+      MediaType::TypeScript
+      | MediaType::Mts
+      | MediaType::Cts
+      | MediaType::Jsx
+      | MediaType::Tsx => true,
+      MediaType::JavaScript
+      | MediaType::Mjs
+      | MediaType::Cjs
+      | MediaType::Dts
+      | MediaType::Dmts
+      | MediaType::Dcts
+      | MediaType::Css
+      | MediaType::Json
+      | MediaType::Wasm
+      | MediaType::TsBuildInfo
+      | MediaType::SourceMap
+      | MediaType::Unknown => false,
+    }
+  }
+
   /// Returns true if this media type provides types inherently.
   ///
   /// Examples are TypeScript, TSX, or DTS files. Wasm and JSON files are also
