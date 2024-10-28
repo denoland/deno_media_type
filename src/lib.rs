@@ -27,7 +27,6 @@ pub enum MediaType {
   Css,
   Json,
   Wasm,
-  TsBuildInfo,
   SourceMap,
   Unknown,
 }
@@ -79,7 +78,6 @@ impl MediaType {
       // mapping purposes, though in reality, it is unlikely to ever be passed
       // to the compiler.
       Self::Wasm => ".js",
-      Self::TsBuildInfo => ".tsbuildinfo",
       // TypeScript doesn't have an "source map", so we will treat SourceMap as
       // JS for mapping purposes, though in reality, it is unlikely to ever be
       // passed to the compiler.
@@ -115,7 +113,6 @@ impl MediaType {
       Self::Css => Some("text/css"),
       Self::Json => Some("application/json"),
       Self::Wasm => Some("application/wasm"),
-      Self::TsBuildInfo => Some("application/json"),
       Self::SourceMap => Some("application/json"),
       Self::Unknown => None,
     }
@@ -136,7 +133,6 @@ impl MediaType {
       | Self::Css
       | Self::Json
       | Self::Wasm
-      | Self::TsBuildInfo
       | Self::SourceMap
       | Self::Unknown => false,
     }
@@ -159,7 +155,6 @@ impl MediaType {
       | MediaType::Css
       | MediaType::Json
       | MediaType::Wasm
-      | MediaType::TsBuildInfo
       | MediaType::SourceMap
       | MediaType::Unknown => false,
     }
@@ -185,7 +180,6 @@ impl MediaType {
       | Self::Mjs
       | Self::Cjs
       | Self::Css
-      | Self::TsBuildInfo
       | Self::SourceMap
       | Self::Unknown => false,
     }
@@ -264,16 +258,6 @@ impl MediaType {
 
   fn from_path_like(path: impl PathLike) -> Self {
     match path.ext() {
-      None => match path.file_name() {
-        None => Self::Unknown,
-        Some(file_name) => {
-          if file_name.eq_ignore_ascii_case(".tsbuildinfo") {
-            Self::TsBuildInfo
-          } else {
-            Self::Unknown
-          }
-        }
-      },
       Some(ext) => {
         // using eq_ignore_ascii_case with if/elses seems to be ~40ns
         // slower here, so continue to use to_lowercase()
@@ -290,11 +274,11 @@ impl MediaType {
           "css" => Self::Css,
           "json" => Self::Json,
           "wasm" => Self::Wasm,
-          "tsbuildinfo" => Self::TsBuildInfo,
           "map" => Self::SourceMap,
           _ => Self::Unknown,
         }
       }
+      None => Self::Unknown,
     }
   }
 
@@ -349,7 +333,6 @@ impl fmt::Display for MediaType {
       Self::Css => "Css",
       Self::Json => "Json",
       Self::Wasm => "Wasm",
-      Self::TsBuildInfo => "TsBuildInfo",
       Self::SourceMap => "SourceMap",
       Self::Unknown => "Unknown",
     };
@@ -577,8 +560,6 @@ mod tests {
       ("foo/bar.css", MediaType::Css),
       ("foo/bar.json", MediaType::Json),
       ("foo/bar.wasm", MediaType::Wasm),
-      ("foo/.tsbuildinfo", MediaType::TsBuildInfo),
-      ("foo/.TSBUILDINFO", MediaType::TsBuildInfo),
       ("foo/bar.js.map", MediaType::SourceMap),
       ("foo/bar.txt", MediaType::Unknown),
       ("foo/bar.css", MediaType::Css),
@@ -777,7 +758,6 @@ mod tests {
     assert_eq!(json!(MediaType::Css), json!("Css"));
     assert_eq!(json!(MediaType::Json), json!("Json"));
     assert_eq!(json!(MediaType::Wasm), json!("Wasm"));
-    assert_eq!(json!(MediaType::TsBuildInfo), json!("TsBuildInfo"));
     assert_eq!(json!(MediaType::SourceMap), json!("SourceMap"));
     assert_eq!(json!(MediaType::Unknown), json!("Unknown"));
   }
@@ -798,7 +778,6 @@ mod tests {
     assert_eq!(MediaType::Css.to_string(), "Css");
     assert_eq!(MediaType::Json.to_string(), "Json");
     assert_eq!(MediaType::Wasm.to_string(), "Wasm");
-    assert_eq!(MediaType::TsBuildInfo.to_string(), "TsBuildInfo");
     assert_eq!(MediaType::SourceMap.to_string(), "SourceMap");
     assert_eq!(MediaType::Unknown.to_string(), "Unknown");
   }
