@@ -418,6 +418,29 @@ fn specifier_file_name(specifier: &ModuleSpecifier) -> Option<&str> {
   }
 }
 
+/// Resolve a media type and optionally the charset from a module specifier and
+/// the value of a content type header.
+#[cfg(feature = "module_specifier")]
+pub fn resolve_media_type_and_charset_from_content_type<'a>(
+  specifier: &ModuleSpecifier,
+  maybe_content_type: Option<&'a str>,
+) -> (MediaType, Option<&'a str>) {
+  if let Some(content_type) = maybe_content_type {
+    let mut content_types = content_type.split(';');
+    let media_type = content_types
+      .next()
+      .map(|content_type| MediaType::from_content_type(specifier, content_type))
+      .unwrap_or(MediaType::Unknown);
+    let charset = content_types
+      .map(str::trim)
+      .find_map(|s| s.strip_prefix("charset="));
+
+    (media_type, charset)
+  } else {
+    (MediaType::from_specifier(specifier), None)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -760,5 +783,195 @@ mod tests {
     assert_eq!(MediaType::Wasm.to_string(), "Wasm");
     assert_eq!(MediaType::SourceMap.to_string(), "SourceMap");
     assert_eq!(MediaType::Unknown.to_string(), "Unknown");
+  }
+
+  #[cfg(feature = "module_specifier")]
+  macro_rules! file_url {
+    ($path:expr) => {
+      if cfg!(target_os = "windows") {
+        concat!("file:///C:", $path)
+      } else {
+        concat!("file://", $path)
+      }
+    };
+  }
+
+  #[cfg(feature = "module_specifier")]
+  #[test]
+  fn test_resolve_media_type_and_charset_from_content_type() {
+    let fixtures = vec![
+      // Extension only
+      (file_url!("/foo/bar.ts"), None, MediaType::TypeScript, None),
+      (file_url!("/foo/bar.tsx"), None, MediaType::Tsx, None),
+      (file_url!("/foo/bar.d.cts"), None, MediaType::Dcts, None),
+      (file_url!("/foo/bar.d.mts"), None, MediaType::Dmts, None),
+      (file_url!("/foo/bar.d.ts"), None, MediaType::Dts, None),
+      (file_url!("/foo/bar.js"), None, MediaType::JavaScript, None),
+      (file_url!("/foo/bar.jsx"), None, MediaType::Jsx, None),
+      (file_url!("/foo/bar.json"), None, MediaType::Json, None),
+      (file_url!("/foo/bar.wasm"), None, MediaType::Wasm, None),
+      (file_url!("/foo/bar.cjs"), None, MediaType::Cjs, None),
+      (file_url!("/foo/bar.mjs"), None, MediaType::Mjs, None),
+      (file_url!("/foo/bar.cts"), None, MediaType::Cts, None),
+      (file_url!("/foo/bar.mts"), None, MediaType::Mts, None),
+      (file_url!("/foo/bar"), None, MediaType::Unknown, None),
+      // Media type no extension
+      (
+        "https://deno.land/x/mod",
+        Some("application/typescript".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/typescript".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("video/vnd.dlna.mpeg-tts".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("video/mp2t".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/x-typescript".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/javascript".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/javascript".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/ecmascript".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/ecmascript".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/x-javascript".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/node".to_string()),
+        MediaType::JavaScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/jsx".to_string()),
+        MediaType::Jsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/tsx".to_string()),
+        MediaType::Tsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/json".to_string()),
+        MediaType::Json,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/json; charset=utf-8".to_string()),
+        MediaType::Json,
+        Some("utf-8".to_string()),
+      ),
+      // Extension with media type
+      (
+        "https://deno.land/x/mod.ts",
+        Some("text/plain".to_string()),
+        MediaType::TypeScript,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.ts",
+        Some("foo/bar".to_string()),
+        MediaType::Unknown,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.tsx",
+        Some("application/typescript".to_string()),
+        MediaType::Tsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.tsx",
+        Some("application/javascript".to_string()),
+        MediaType::Tsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.jsx",
+        Some("application/javascript".to_string()),
+        MediaType::Jsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.jsx",
+        Some("application/x-typescript".to_string()),
+        MediaType::Jsx,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.d.ts",
+        Some("application/javascript".to_string()),
+        MediaType::Dts,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.d.ts",
+        Some("text/plain".to_string()),
+        MediaType::Dts,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod.d.ts",
+        Some("application/x-typescript".to_string()),
+        MediaType::Dts,
+        None,
+      ),
+    ];
+
+    for (specifier, maybe_content_type, media_type, maybe_charset) in fixtures {
+      let specifier = ModuleSpecifier::parse(specifier).unwrap();
+      assert_eq!(
+        resolve_media_type_and_charset_from_content_type(
+          &specifier,
+          maybe_content_type.as_deref()
+        ),
+        (media_type, maybe_charset.as_deref())
+      );
+    }
   }
 }
