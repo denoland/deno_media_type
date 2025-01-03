@@ -51,9 +51,7 @@ impl MediaType {
       Self::Tsx => ".tsx",
       Self::Css => ".css",
       Self::Json => ".json",
-      // TypeScript doesn't have an "unknown", so we will treat WASM as JS for
-      // mapping purposes, though in reality, it is unlikely to ever be passed
-      // to the compiler.
+      // We transform Wasm to a declaration file.
       Self::Wasm => ".d.mts",
       // TypeScript doesn't have an "source map", so we will treat SourceMap as
       // JS for mapping purposes, though in reality, it is unlikely to ever be
