@@ -10,7 +10,7 @@ use std::path::Path;
 
 #[cfg(feature = "data_url")]
 pub mod data_url;
-pub mod text_encoding;
+pub mod encoding;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MediaType {

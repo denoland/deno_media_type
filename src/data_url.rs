@@ -57,7 +57,7 @@ impl RawDataUrl {
   #[cfg(feature = "decoding")]
   pub fn decode(self) -> Result<String, std::io::Error> {
     let charset = get_mime_type_charset(&self.mime_type).unwrap_or("utf-8");
-    crate::text_encoding::decode_owned_source(charset, self.bytes)
+    crate::encoding::decode_owned_source(charset, self.bytes)
   }
 
   pub fn into_bytes_and_mime_type(self) -> (Vec<u8>, String) {
