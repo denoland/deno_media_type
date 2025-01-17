@@ -14,11 +14,14 @@ all-features = true
 
 [features]
 default = ["module_specifier"]
-module_specifier = ["data-url", "url"]
+decoding = ["encoding_rs"]
+data_url = ["dep:data-url", "url"]
+module_specifier = ["dep:data-url", "url"]
 
 [dependencies]
-serde = { version = "1.0.130", features = ["derive", "rc"] }
 data-url = { version = "0.3.0", optional = true }
+encoding_rs = { version = "0.8.33", optional = true }
+serde = { version = "1.0.130", features = ["derive", "rc"] }
 url = { version = "2.3.1", optional = true }
 
 [dev-dependencies]

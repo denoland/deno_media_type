@@ -1,4 +1,4 @@
-// Copyright 2018-2024 the Deno authors. MIT license.
+// Copyright 2018-2025 the Deno authors. MIT license.
 
 #![deny(clippy::print_stderr)]
 #![deny(clippy::print_stdout)]
@@ -8,8 +8,9 @@ use serde::Serializer;
 use std::fmt;
 use std::path::Path;
 
-#[cfg(feature = "module_specifier")]
-type ModuleSpecifier = url::Url;
+#[cfg(feature = "data_url")]
+pub mod data_url;
+pub mod encoding;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MediaType {
@@ -160,9 +161,9 @@ impl MediaType {
     }
   }
 
-  #[cfg(feature = "module_specifier")]
+  #[cfg(feature = "url")]
   pub fn from_specifier_and_headers(
-    specifier: &ModuleSpecifier,
+    specifier: &url::Url,
     maybe_headers: Option<&std::collections::HashMap<String, String>>,
   ) -> Self {
     Self::from_specifier_and_content_type(
@@ -171,9 +172,9 @@ impl MediaType {
     )
   }
 
-  #[cfg(feature = "module_specifier")]
+  #[cfg(feature = "url")]
   pub fn from_specifier_and_content_type(
-    specifier: &ModuleSpecifier,
+    specifier: &url::Url,
     maybe_content_type: Option<&str>,
   ) -> Self {
     if let Some(content_type) = maybe_content_type {
@@ -183,9 +184,9 @@ impl MediaType {
     }
   }
 
-  #[cfg(feature = "module_specifier")]
+  #[cfg(feature = "url")]
   pub fn from_content_type<S: AsRef<str>>(
-    specifier: &ModuleSpecifier,
+    specifier: &url::Url,
     content_type: S,
   ) -> Self {
     let first_part = content_type
@@ -296,9 +297,9 @@ impl MediaType {
     Self::from_path(Path::new(path))
   }
 
-  #[cfg(feature = "module_specifier")]
-  pub fn from_specifier(specifier: &ModuleSpecifier) -> MediaType {
-    use data_url::DataUrl;
+  #[cfg(feature = "url")]
+  pub fn from_specifier(specifier: &url::Url) -> MediaType {
+    use ::data_url::DataUrl;
 
     if specifier.scheme() == "data" {
       if let Ok(data_url) = DataUrl::process(specifier.as_str()) {
@@ -356,9 +357,9 @@ impl fmt::Display for MediaType {
 
 /// Used to augment media types by using the path part of a module specifier to
 /// resolve to a more accurate media type.
-#[cfg(feature = "module_specifier")]
+#[cfg(feature = "url")]
 fn map_js_like_extension(
-  specifier: &ModuleSpecifier,
+  specifier: &url::Url,
   default: MediaType,
 ) -> MediaType {
   let media_type = match specifier_file_name(specifier) {
@@ -397,7 +398,8 @@ fn map_js_like_extension(
   }
 }
 
-fn specifier_file_name(specifier: &ModuleSpecifier) -> Option<&str> {
+#[cfg(feature = "url")]
+fn specifier_file_name(specifier: &url::Url) -> Option<&str> {
   let path = specifier.path();
   let path = if path.is_empty() {
     // ex. deno://lib.deno.d.ts
@@ -418,9 +420,9 @@ fn specifier_file_name(specifier: &ModuleSpecifier) -> Option<&str> {
 
 /// Resolve a media type and optionally the charset from a module specifier and
 /// the value of a content type header.
-#[cfg(feature = "module_specifier")]
+#[cfg(feature = "url")]
 pub fn resolve_media_type_and_charset_from_content_type<'a>(
-  specifier: &ModuleSpecifier,
+  specifier: &url::Url,
   maybe_content_type: Option<&'a str>,
 ) -> (MediaType, Option<&'a str>) {
   if let Some(content_type) = maybe_content_type {
@@ -442,6 +444,9 @@ pub fn resolve_media_type_and_charset_from_content_type<'a>(
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[cfg(feature = "module_specifier")]
+  type ModuleSpecifier = url::Url;
 
   use serde_json::json;
 
