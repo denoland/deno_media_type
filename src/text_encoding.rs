@@ -13,10 +13,7 @@ pub fn strip_bom_mut(text: &mut String) {
 ///
 /// Supports UTF-8, UTF-16 Little Endian and UTF-16 Big Endian.
 #[cfg(feature = "url")]
-pub fn detect_charset(
-  specifier: &url::Url,
-  bytes: &'_ [u8]
-) -> &'static str {
+pub fn detect_charset(specifier: &url::Url, bytes: &'_ [u8]) -> &'static str {
   const UTF16_LE_BOM: &[u8] = b"\xFF\xFE";
   const UTF16_BE_BOM: &[u8] = b"\xFE\xFF";
 
@@ -122,7 +119,7 @@ mod test {
     fn run_detection_test(test_data: &[u8], expected_charset: &str) {
       let detected_charset = detect_charset(
         &url::Url::parse("file:///file.txt").unwrap(),
-        test_data
+        test_data,
       );
       assert_eq!(
         expected_charset.to_lowercase(),
@@ -183,16 +180,12 @@ mod test {
     assert!(result.is_ok());
   }
 
-  
   #[cfg(feature = "decoding")]
   #[test]
   fn test_decode_owned_with_bom() {
     let bytes = format!("{}{}", BOM_CHAR, "Hello").into_bytes();
     let text = decode_owned_source(
-      detect_charset(
-        &url::Url::parse("file:///file.txt").unwrap(),
-        &bytes
-      ),
+      detect_charset(&url::Url::parse("file:///file.txt").unwrap(), &bytes),
       bytes,
     )
     .unwrap();
@@ -204,10 +197,7 @@ mod test {
   fn test_decode_with_charset_with_bom() {
     let bytes = format!("{}{}", BOM_CHAR, "Hello").into_bytes();
     let charset = "utf-8";
-    let text = decode_arc_source(
-      charset,
-      std::sync::Arc::from(bytes),
-    ).unwrap();
+    let text = decode_arc_source(charset, std::sync::Arc::from(bytes)).unwrap();
     assert_eq!(text.as_ref(), "Hello");
   }
 }

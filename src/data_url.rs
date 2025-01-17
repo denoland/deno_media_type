@@ -27,8 +27,8 @@ impl RawDataUrl {
       Error::new(ErrorKind::InvalidData, "Unable to decode data url.")
     }
 
-    let url =
-      data_url::DataUrl::process(specifier.as_str()).map_err(|_| unable_to_decode())?;
+    let url = data_url::DataUrl::process(specifier.as_str())
+      .map_err(|_| unable_to_decode())?;
     let (bytes, _) = url.decode_to_vec().map_err(|_| unable_to_decode())?;
     Ok(RawDataUrl {
       mime_type: url.mime_type().to_string(),
