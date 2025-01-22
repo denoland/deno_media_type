@@ -14,19 +14,27 @@ pub fn strip_bom_mut(text: &mut String) {
 /// Supports UTF-8, UTF-16 Little Endian and UTF-16 Big Endian.
 #[cfg(feature = "url")]
 pub fn detect_charset(specifier: &url::Url, bytes: &'_ [u8]) -> &'static str {
+  if specifier.scheme() == "file" {
+    detect_local_file_charset(bytes)
+  } else {
+    "utf-8"
+  }
+}
+
+/// Attempts to detect the character encoding of the provided bytes
+/// from a local file.
+///
+/// Supports UTF-8, UTF-16 Little Endian and UTF-16 Big Endian.
+pub fn detect_local_file_charset(bytes: &'_ [u8]) -> &'static str {
   const UTF16_LE_BOM: &[u8] = b"\xFF\xFE";
   const UTF16_BE_BOM: &[u8] = b"\xFE\xFF";
 
-  if specifier.scheme() == "file" {
-    if bytes.starts_with(UTF16_LE_BOM) {
-      "utf-16le"
-    } else if bytes.starts_with(UTF16_BE_BOM) {
-      "utf-16be"
-    } else {
-      // Assume everything else is utf-8
-      "utf-8"
-    }
+  if bytes.starts_with(UTF16_LE_BOM) {
+    "utf-16le"
+  } else if bytes.starts_with(UTF16_BE_BOM) {
+    "utf-16be"
   } else {
+    // Assume everything else is utf-8
     "utf-8"
   }
 }
