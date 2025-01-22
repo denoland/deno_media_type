@@ -22,7 +22,8 @@ pub fn detect_charset(specifier: &url::Url, bytes: &'_ [u8]) -> &'static str {
 }
 
 /// Attempts to detect the character encoding of the provided bytes
-/// from a local file.
+/// from a local file. This should NOT be used for remote bytes. Use
+/// `detect_charset` for that.
 ///
 /// Supports UTF-8, UTF-16 Little Endian and UTF-16 Big Endian.
 pub fn detect_local_file_charset(bytes: &'_ [u8]) -> &'static str {
