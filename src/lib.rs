@@ -136,6 +136,27 @@ impl MediaType {
     }
   }
 
+  /// Gets if the media type is a `.jsx` or `.tsx` file.
+  pub fn is_jsx(&self) -> bool {
+    match self {
+      Self::Tsx | Self::Jsx => true,
+      Self::TypeScript
+      | Self::Mts
+      | Self::Cts
+      | Self::Dts
+      | Self::Dmts
+      | Self::Dcts
+      | Self::Json
+      | Self::Wasm
+      | Self::JavaScript
+      | Self::Mjs
+      | Self::Cjs
+      | Self::Css
+      | Self::SourceMap
+      | Self::Unknown => false,
+    }
+  }
+
   /// Returns true if this media type provides types inherently.
   ///
   /// Examples are TypeScript, TSX, or DTS files. Wasm and JSON files are also
