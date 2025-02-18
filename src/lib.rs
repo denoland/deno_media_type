@@ -139,8 +139,7 @@ impl MediaType {
   /// Gets if the media type is a `.jsx` or `.tsx` file.
   pub fn is_jsx(&self) -> bool {
     match self {
-      Self::Tsx
-      | Self::Jsx => true,
+      Self::Tsx | Self::Jsx => true,
       Self::TypeScript
       | Self::Mts
       | Self::Cts
