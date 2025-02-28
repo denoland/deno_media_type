@@ -27,6 +27,8 @@ pub enum MediaType {
   Tsx,
   Css,
   Json,
+  Html,
+  Sql,
   Wasm,
   SourceMap,
   Unknown,
@@ -52,6 +54,8 @@ impl MediaType {
       Self::Tsx => ".tsx",
       Self::Css => ".css",
       Self::Json => ".json",
+      Self::Html => ".html",
+      Self::Sql => ".sql",
       // We transform Wasm to a declaration file.
       Self::Wasm => ".d.mts",
       // TypeScript doesn't have an "source map", so we will treat SourceMap as
@@ -88,6 +92,8 @@ impl MediaType {
       Self::Tsx => Some("text/tsx"),
       Self::Css => Some("text/css"),
       Self::Json => Some("application/json"),
+      Self::Html => Some("text/html"),
+      Self::Sql => Some("application/sql"),
       Self::Wasm => Some("application/wasm"),
       Self::SourceMap => Some("application/json"),
       Self::Unknown => None,
@@ -108,6 +114,8 @@ impl MediaType {
       | Self::Tsx
       | Self::Css
       | Self::Json
+      | Self::Html
+      | Self::Sql
       | Self::Wasm
       | Self::SourceMap
       | Self::Unknown => false,
@@ -130,6 +138,8 @@ impl MediaType {
       | MediaType::Dcts
       | MediaType::Css
       | MediaType::Json
+      | MediaType::Html
+      | MediaType::Sql
       | MediaType::Wasm
       | MediaType::SourceMap
       | MediaType::Unknown => false,
@@ -147,6 +157,8 @@ impl MediaType {
       | Self::Dmts
       | Self::Dcts
       | Self::Json
+      | Self::Html
+      | Self::Sql
       | Self::Wasm
       | Self::JavaScript
       | Self::Mjs
@@ -177,6 +189,8 @@ impl MediaType {
       | Self::Mjs
       | Self::Cjs
       | Self::Css
+      | Self::Html
+      | Self::Sql
       | Self::SourceMap
       | Self::Unknown => false,
     }
@@ -368,6 +382,8 @@ impl fmt::Display for MediaType {
       Self::Tsx => "TSX",
       Self::Css => "Css",
       Self::Json => "Json",
+      Self::Html => "Html",
+      Self::Sql => "Sql",
       Self::Wasm => "Wasm",
       Self::SourceMap => "SourceMap",
       Self::Unknown => "Unknown",
@@ -413,6 +429,8 @@ fn map_js_like_extension(
     | MediaType::TypeScript
     | MediaType::Css
     | MediaType::Json
+    | MediaType::Html
+    | MediaType::Sql
     | MediaType::Wasm
     | MediaType::SourceMap
     | MediaType::Unknown => default,
