@@ -70,6 +70,30 @@ pub fn decode_arc_source(
   charset: &str,
   bytes: std::sync::Arc<[u8]>,
 ) -> Result<std::sync::Arc<str>, std::io::Error> {
+  decode_arc_source_detail(charset, bytes).map(|d| d.text)
+}
+
+#[cfg(feature = "decoding")]
+pub struct DecodedArcSourceDetail {
+  pub text: std::sync::Arc<str>,
+  /// If the text is equal to the original data.
+  ///
+  /// When this is `true` then that means the `Arc<str>` is equal
+  /// to the original `Arc<[u8]>`.
+  pub is_original_data: bool,
+}
+
+/// Decodes the source bytes into a string handling any encoding rules
+/// for local vs remote files and dealing with the charset and returns
+/// the original bytes.
+///
+/// Note: The text and bytes will point at the same data when no decoding
+/// is necessary.
+#[cfg(feature = "decoding")]
+pub fn decode_arc_source_detail(
+  charset: &str,
+  bytes: std::sync::Arc<[u8]>,
+) -> Result<DecodedArcSourceDetail, std::io::Error> {
   use std::sync::Arc;
 
   let text = match convert_to_utf8(bytes.as_ref(), charset)? {
@@ -77,15 +101,16 @@ pub fn decode_arc_source(
       if text.starts_with(BOM_CHAR) {
         text[BOM_CHAR.len_utf8()..].to_string()
       } else {
-        return Ok(
+        return Ok(DecodedArcSourceDetail {
+          is_original_data: true,
           // SAFETY: we know it's a valid utf-8 string at this point
-          unsafe {
+          text: unsafe {
             let raw_ptr = Arc::into_raw(bytes);
             Arc::from_raw(std::mem::transmute::<*const [u8], *const str>(
               raw_ptr,
             ))
           },
-        );
+        });
       }
     }
     std::borrow::Cow::Owned(mut text) => {
@@ -94,7 +119,10 @@ pub fn decode_arc_source(
     }
   };
   let text: Arc<str> = Arc::from(text);
-  Ok(text)
+  Ok(DecodedArcSourceDetail {
+    text,
+    is_original_data: false,
+  })
 }
 
 /// Attempts to convert the provided bytes to a UTF-8 string.
@@ -206,7 +234,18 @@ mod test {
   fn test_decode_with_charset_with_bom() {
     let bytes = format!("{}{}", BOM_CHAR, "Hello").into_bytes();
     let charset = "utf-8";
-    let text = decode_arc_source(charset, std::sync::Arc::from(bytes)).unwrap();
-    assert_eq!(text.as_ref(), "Hello");
+    let detail = decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
+    assert_eq!(detail.text.as_ref(), "Hello");
+    assert!(!detail.is_original_data);
+  }
+
+  #[cfg(feature = "decoding")]
+  #[test]
+  fn test_decode_with_charset_no_change() {
+    let bytes = "Hello".to_string().into_bytes();
+    let charset = "utf-8";
+    let detail = decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
+    assert_eq!(detail.text.as_ref(), "Hello");
+    assert!(detail.is_original_data);
   }
 }
