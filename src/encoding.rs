@@ -234,7 +234,8 @@ mod test {
   fn test_decode_with_charset_with_bom() {
     let bytes = format!("{}{}", BOM_CHAR, "Hello").into_bytes();
     let charset = "utf-8";
-    let detail = decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
+    let detail =
+      decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
     assert_eq!(detail.text.as_ref(), "Hello");
     assert!(!detail.is_original_data);
   }
@@ -244,7 +245,8 @@ mod test {
   fn test_decode_with_charset_no_change() {
     let bytes = "Hello".to_string().into_bytes();
     let charset = "utf-8";
-    let detail = decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
+    let detail =
+      decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
     assert_eq!(detail.text.as_ref(), "Hello");
     assert!(detail.is_original_data);
   }
