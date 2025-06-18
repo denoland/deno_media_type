@@ -73,14 +73,20 @@ pub fn decode_arc_source(
   decode_arc_source_detail(charset, bytes).map(|d| d.text)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DecodedArcSourceDetailKind {
+  /// Data in the original `Arc<[u8]>` is equal to the `Arc<str>`.
+  Unchanged,
+  /// Data in the `Arc<[u8]>` lost information when decoding to an `Arc<str>`.
+  Changed,
+  /// Data in the `Arc<[u8]>` only had the UTF-8 BOM stripped.
+  OnlyUtf8Bom,
+}
+
 #[cfg(feature = "decoding")]
 pub struct DecodedArcSourceDetail {
   pub text: std::sync::Arc<str>,
-  /// If the text is equal to the original data.
-  ///
-  /// When this is `true` then that means the `Arc<str>` is equal
-  /// to the original `Arc<[u8]>`.
-  pub is_original_data: bool,
+  pub kind: DecodedArcSourceDetailKind,
 }
 
 /// Decodes the source bytes into a string handling any encoding rules
@@ -96,13 +102,16 @@ pub fn decode_arc_source_detail(
 ) -> Result<DecodedArcSourceDetail, std::io::Error> {
   use std::sync::Arc;
 
-  let text = match convert_to_utf8(bytes.as_ref(), charset)? {
+  let (kind, text) = match convert_to_utf8(bytes.as_ref(), charset)? {
     std::borrow::Cow::Borrowed(text) => {
       if text.starts_with(BOM_CHAR) {
-        text[BOM_CHAR.len_utf8()..].to_string()
+        (
+          DecodedArcSourceDetailKind::OnlyUtf8Bom,
+          text[BOM_CHAR.len_utf8()..].to_string(),
+        )
       } else {
         return Ok(DecodedArcSourceDetail {
-          is_original_data: true,
+          kind: DecodedArcSourceDetailKind::Unchanged,
           // SAFETY: we know it's a valid utf-8 string at this point
           text: unsafe {
             let raw_ptr = Arc::into_raw(bytes);
@@ -115,14 +124,11 @@ pub fn decode_arc_source_detail(
     }
     std::borrow::Cow::Owned(mut text) => {
       strip_bom_mut(&mut text);
-      text
+      (DecodedArcSourceDetailKind::Changed, text)
     }
   };
   let text: Arc<str> = Arc::from(text);
-  Ok(DecodedArcSourceDetail {
-    text,
-    is_original_data: false,
-  })
+  Ok(DecodedArcSourceDetail { text, kind })
 }
 
 /// Attempts to convert the provided bytes to a UTF-8 string.
@@ -237,7 +243,18 @@ mod test {
     let detail =
       decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
     assert_eq!(detail.text.as_ref(), "Hello");
-    assert!(!detail.is_original_data);
+    assert_eq!(detail.kind, DecodedArcSourceDetailKind::OnlyUtf8Bom);
+  }
+
+  #[cfg(feature = "decoding")]
+  #[test]
+  fn test_decode_with_charset_changed() {
+    let bytes = vec![0x48, 0x65, 0xFF, 0x6C, 0x6F];
+    let charset = "utf-8";
+    let detail =
+      decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
+    assert_eq!(detail.text.as_ref(), "He�lo");
+    assert_eq!(detail.kind, DecodedArcSourceDetailKind::Changed);
   }
 
   #[cfg(feature = "decoding")]
@@ -248,6 +265,6 @@ mod test {
     let detail =
       decode_arc_source_detail(charset, std::sync::Arc::from(bytes)).unwrap();
     assert_eq!(detail.text.as_ref(), "Hello");
-    assert!(detail.is_original_data);
+    assert_eq!(detail.kind, DecodedArcSourceDetailKind::Unchanged);
   }
 }
