@@ -1,6 +1,6 @@
 [package]
 name = "deno_media_type"
-version = "0.2.8"
+version = "0.2.9"
 edition = "2021"
 description = "Media type used in Deno"
 homepage = "https://deno.land/"
