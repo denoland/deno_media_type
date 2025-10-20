@@ -27,6 +27,8 @@ pub enum MediaType {
   Tsx,
   Css,
   Json,
+  Jsonc,
+  Json5,
   Html,
   Sql,
   Wasm,
@@ -54,6 +56,8 @@ impl MediaType {
       Self::Tsx => ".tsx",
       Self::Css => ".css",
       Self::Json => ".json",
+      Self::Jsonc => ".jsonc",
+      Self::Json5 => ".json5",
       Self::Html => ".html",
       Self::Sql => ".sql",
       // We transform Wasm to a declaration file.
@@ -92,6 +96,8 @@ impl MediaType {
       Self::Tsx => Some("text/tsx"),
       Self::Css => Some("text/css"),
       Self::Json => Some("application/json"),
+      Self::Jsonc => Some("application/jsonc"),
+      Self::Json5 => Some("application/json5"),
       Self::Html => Some("text/html"),
       Self::Sql => Some("application/sql"),
       Self::Wasm => Some("application/wasm"),
@@ -114,6 +120,8 @@ impl MediaType {
       | Self::Tsx
       | Self::Css
       | Self::Json
+      | Self::Jsonc
+      | Self::Json5
       | Self::Html
       | Self::Sql
       | Self::Wasm
@@ -138,6 +146,8 @@ impl MediaType {
       | MediaType::Dcts
       | MediaType::Css
       | MediaType::Json
+      | MediaType::Jsonc
+      | MediaType::Json5
       | MediaType::Html
       | MediaType::Sql
       | MediaType::Wasm
@@ -157,6 +167,8 @@ impl MediaType {
       | Self::Dmts
       | Self::Dcts
       | Self::Json
+      | Self::Jsonc
+      | Self::Json5
       | Self::Html
       | Self::Sql
       | Self::Wasm
@@ -183,6 +195,8 @@ impl MediaType {
       | Self::Dcts
       | Self::Tsx
       | Self::Json
+      | Self::Jsonc
+      | Self::Json5
       | Self::Wasm => true,
       Self::JavaScript
       | Self::Jsx
@@ -258,6 +272,8 @@ impl MediaType {
       "text/jsx" => Self::Jsx,
       "text/tsx" => Self::Tsx,
       "application/json" | "text/json" => Self::Json,
+      "application/jsonc" | "text/jsonc" => Self::Jsonc,
+      "application/json5" | "text/json5" => Self::Json5,
       "application/wasm" => Self::Wasm,
       "text/css" => Self::Css,
       // Handle plain and possibly webassembly
@@ -321,6 +337,8 @@ impl MediaType {
       "cjs" => Self::Cjs,
       "css" => Self::Css,
       "json" => Self::Json,
+      "jsonc" => Self::Jsonc,
+      "json5" => Self::Json5,
       "wasm" => Self::Wasm,
       "map" => Self::SourceMap,
       _ => Self::Unknown,
@@ -382,6 +400,8 @@ impl fmt::Display for MediaType {
       Self::Tsx => "TSX",
       Self::Css => "Css",
       Self::Json => "Json",
+      Self::Jsonc => "Jsonc",
+      Self::Json5 => "Json5",
       Self::Html => "Html",
       Self::Sql => "Sql",
       Self::Wasm => "Wasm",
@@ -429,6 +449,8 @@ fn map_js_like_extension(
     | MediaType::TypeScript
     | MediaType::Css
     | MediaType::Json
+    | MediaType::Jsonc
+    | MediaType::Json5
     | MediaType::Html
     | MediaType::Sql
     | MediaType::Wasm
@@ -596,11 +618,11 @@ mod tests {
       ("foo/bar.jsx", MediaType::Jsx),
       ("foo/bar.css", MediaType::Css),
       ("foo/bar.json", MediaType::Json),
+      ("foo/bar.jsonc", MediaType::Jsonc),
+      ("foo/bar.json5", MediaType::Json5),
       ("foo/bar.wasm", MediaType::Wasm),
       ("foo/bar.js.map", MediaType::SourceMap),
       ("foo/bar.txt", MediaType::Unknown),
-      ("foo/bar.css", MediaType::Css),
-      ("foo/bar.json", MediaType::Json),
     ];
 
     for (path, expected) in fixtures {
@@ -642,6 +664,8 @@ mod tests {
       ("https://deno.land/x/mod.txt", MediaType::Unknown),
       ("https://deno.land/x/mod.css", MediaType::Css),
       ("https://deno.land/x/mod.json", MediaType::Json),
+      ("https://deno.land/x/mod.jsonc", MediaType::Jsonc),
+      ("https://deno.land/x/mod.json5", MediaType::Json5),
       ("data:application/typescript;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::TypeScript),
       ("data:application/javascript;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::JavaScript),
       ("data:text/plain;base64,ZXhwb3J0IGNvbnN0IGEgPSAiYSI7CgpleHBvcnQgZW51bSBBIHsKICBBLAogIEIsCiAgQywKfQo=", MediaType::Unknown),
@@ -767,6 +791,16 @@ mod tests {
         "application/json",
         MediaType::Json,
       ),
+      (
+        "https://deno.land/x/mod.jsx",
+        "application/jsonc",
+        MediaType::Jsonc,
+      ),
+      (
+        "https://deno.land/x/mod.jsx",
+        "application/json5",
+        MediaType::Json5,
+      ),
     ];
 
     for (specifier, content_type, expected) in fixtures {
@@ -802,6 +836,8 @@ mod tests {
     assert_eq!(json!(MediaType::Tsx), json!("TSX"));
     assert_eq!(json!(MediaType::Css), json!("Css"));
     assert_eq!(json!(MediaType::Json), json!("Json"));
+    assert_eq!(json!(MediaType::Jsonc), json!("Jsonc"));
+    assert_eq!(json!(MediaType::Json5), json!("Json5"));
     assert_eq!(json!(MediaType::Wasm), json!("Wasm"));
     assert_eq!(json!(MediaType::SourceMap), json!("SourceMap"));
     assert_eq!(json!(MediaType::Unknown), json!("Unknown"));
@@ -822,6 +858,8 @@ mod tests {
     assert_eq!(MediaType::Tsx.to_string(), "TSX");
     assert_eq!(MediaType::Css.to_string(), "Css");
     assert_eq!(MediaType::Json.to_string(), "Json");
+    assert_eq!(MediaType::Jsonc.to_string(), "Jsonc");
+    assert_eq!(MediaType::Json5.to_string(), "Json5");
     assert_eq!(MediaType::Wasm.to_string(), "Wasm");
     assert_eq!(MediaType::SourceMap.to_string(), "SourceMap");
     assert_eq!(MediaType::Unknown.to_string(), "Unknown");
@@ -851,6 +889,8 @@ mod tests {
       (file_url!("/foo/bar.js"), None, MediaType::JavaScript, None),
       (file_url!("/foo/bar.jsx"), None, MediaType::Jsx, None),
       (file_url!("/foo/bar.json"), None, MediaType::Json, None),
+      (file_url!("/foo/bar.jsonc"), None, MediaType::Jsonc, None),
+      (file_url!("/foo/bar.json5"), None, MediaType::Json5, None),
       (file_url!("/foo/bar.wasm"), None, MediaType::Wasm, None),
       (file_url!("/foo/bar.cjs"), None, MediaType::Cjs, None),
       (file_url!("/foo/bar.mjs"), None, MediaType::Mjs, None),
@@ -947,6 +987,18 @@ mod tests {
         Some("text/json; charset=utf-8".to_string()),
         MediaType::Json,
         Some("utf-8".to_string()),
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/jsonc".to_string()),
+        MediaType::Jsonc,
+        None,
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("text/json5".to_string()),
+        MediaType::Json5,
+        None,
       ),
       // Extension with media type
       (
