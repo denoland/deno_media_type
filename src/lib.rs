@@ -56,8 +56,8 @@ impl MediaType {
       Self::Tsx => ".tsx",
       Self::Css => ".css",
       Self::Json => ".json",
-      Self::Jsonc => ".jsonc",
-      Self::Json5 => ".json5",
+      Self::Jsonc => ".json",
+      Self::Json5 => ".js",
       Self::Html => ".html",
       Self::Sql => ".sql",
       // We transform Wasm to a declaration file.
