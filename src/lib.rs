@@ -272,6 +272,7 @@ impl MediaType {
       "text/jsx" => Self::Jsx,
       "text/tsx" => Self::Tsx,
       "application/json" | "text/json" => Self::Json,
+      s if s.ends_with("+json") => Self::Json,
       "application/jsonc" | "text/jsonc" => Self::Jsonc,
       "application/json5" | "text/json5" => Self::Json5,
       "application/wasm" => Self::Wasm,
@@ -987,6 +988,12 @@ mod tests {
         Some("text/json; charset=utf-8".to_string()),
         MediaType::Json,
         Some("utf-8".to_string()),
+      ),
+      (
+        "https://deno.land/x/mod",
+        Some("application/geo+json".to_string()),
+        MediaType::Json,
+        None,
       ),
       (
         "https://deno.land/x/mod",
