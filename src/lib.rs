@@ -439,7 +439,6 @@ impl fmt::Display for MediaType {
 
 /// Used to augment media types by using the path part of a module specifier to
 /// resolve to a more accurate media type.
-#[cfg(feature = "url")]
 fn map_js_like_extension(
   file_name: Option<&str>,
   default: MediaType,
