@@ -260,7 +260,6 @@ impl MediaType {
     )
   }
 
-  #[cfg(feature = "url")]
   fn from_maybe_filename_and_mime_type(
     file_name: Option<&str>,
     mime_type: &str,
