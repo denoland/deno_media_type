@@ -238,14 +238,34 @@ impl MediaType {
     specifier: &url::Url,
     content_type: S,
   ) -> Self {
-    let first_part = content_type
+    let mime_type = content_type
       .as_ref()
       .split(';')
       .next()
       .unwrap()
       .trim()
       .to_lowercase();
-    match first_part.as_str() {
+    // Handle plain and possibly webassembly
+    if matches!(
+      mime_type.as_str(),
+      "text/plain" | "application/octet-stream"
+    ) && specifier.scheme() != "data"
+    {
+      return Self::from_specifier(specifier);
+    }
+
+    Self::from_maybe_filename_and_mime_type(
+      specifier_file_name(specifier),
+      &mime_type,
+    )
+  }
+
+  #[cfg(feature = "url")]
+  fn from_maybe_filename_and_mime_type(
+    file_name: Option<&str>,
+    mime_type: &str,
+  ) -> Self {
+    match mime_type {
       "application/typescript"
       | "text/typescript"
       | "video/vnd.dlna.mpeg-tts"
@@ -258,7 +278,7 @@ impl MediaType {
         //
         // This handles situations where the file is transpiled on the server and
         // is explicitly providing a media type.
-        map_js_like_extension(specifier, Self::TypeScript)
+        map_js_like_extension(file_name, Self::TypeScript)
       }
       "application/javascript"
       | "text/javascript"
@@ -266,9 +286,9 @@ impl MediaType {
       | "text/ecmascript"
       | "application/x-javascript"
       | "application/node" => {
-        map_js_like_extension(specifier, Self::JavaScript)
+        map_js_like_extension(file_name, Self::JavaScript)
       }
-      "text/jscript" => map_js_like_extension(specifier, Self::Jsx),
+      "text/jscript" => map_js_like_extension(file_name, Self::Jsx),
       "text/jsx" => Self::Jsx,
       "text/tsx" => Self::Tsx,
       "application/json" | "text/json" => Self::Json,
@@ -277,12 +297,6 @@ impl MediaType {
       "application/json5" | "text/json5" => Self::Json5,
       "application/wasm" => Self::Wasm,
       "text/css" => Self::Css,
-      // Handle plain and possibly webassembly
-      "text/plain" | "application/octet-stream"
-        if specifier.scheme() != "data" =>
-      {
-        Self::from_specifier(specifier)
-      }
       _ => Self::Unknown,
     }
   }
@@ -338,11 +352,22 @@ impl MediaType {
       "cjs" => Self::Cjs,
       "css" => Self::Css,
       "json" => Self::Json,
+      // These extensions are not included in mime db but are well-known JSON
+      // extensions.
+      "ipynb" | "har" => Self::Json,
       "jsonc" => Self::Jsonc,
       "json5" => Self::Json5,
       "wasm" => Self::Wasm,
       "map" => Self::SourceMap,
-      _ => Self::Unknown,
+      _ => {
+        if let Some(mime_type) = mime_db::lookup(&ext) {
+          // Don't provide a file name because evidently it didn't yield
+          // anything and will cause an infinite loop.
+          Self::from_maybe_filename_and_mime_type(None, mime_type)
+        } else {
+          Self::Unknown
+        }
+      }
     }
   }
 
@@ -417,10 +442,10 @@ impl fmt::Display for MediaType {
 /// resolve to a more accurate media type.
 #[cfg(feature = "url")]
 fn map_js_like_extension(
-  specifier: &url::Url,
+  file_name: Option<&str>,
   default: MediaType,
 ) -> MediaType {
-  let media_type = match specifier_file_name(specifier) {
+  let media_type = match file_name {
     Some(file_name) => MediaType::from_filename(file_name),
     None => MediaType::Unknown,
   };
@@ -619,6 +644,14 @@ mod tests {
       ("foo/bar.jsx", MediaType::Jsx),
       ("foo/bar.css", MediaType::Css),
       ("foo/bar.json", MediaType::Json),
+      ("foo/bar.webmanifest", MediaType::Json),
+      ("foo/bar.webapp", MediaType::Json),
+      ("foo/bar.jsonld", MediaType::Json),
+      ("foo/bar.jsonml", MediaType::Json),
+      ("foo/bar.ipynb", MediaType::Json),
+      ("foo/bar.geojson", MediaType::Json),
+      ("foo/bar.har", MediaType::Json),
+      ("foo/bar.gltf", MediaType::Json),
       ("foo/bar.jsonc", MediaType::Jsonc),
       ("foo/bar.json5", MediaType::Json5),
       ("foo/bar.wasm", MediaType::Wasm),
