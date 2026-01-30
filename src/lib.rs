@@ -38,43 +38,6 @@ pub enum MediaType {
 }
 
 impl MediaType {
-  /// Convert a MediaType to a `ts.Extension`.
-  ///
-  /// *NOTE* This is defined in TypeScript as a string based enum.  Changes to
-  /// that enum in TypeScript should be reflected here.
-  pub fn as_ts_extension(&self) -> &'static str {
-    match self {
-      Self::JavaScript => ".js",
-      Self::Jsx => ".jsx",
-      Self::Mjs => ".mjs",
-      Self::Cjs => ".cjs",
-      Self::TypeScript => ".ts",
-      Self::Mts => ".mts",
-      Self::Cts => ".cts",
-      Self::Dts => ".d.ts",
-      Self::Dmts => ".d.mts",
-      Self::Dcts => ".d.cts",
-      Self::Tsx => ".tsx",
-      Self::Css => ".css",
-      Self::Json => ".json",
-      Self::Jsonc => ".json",
-      Self::Json5 => ".json",
-      Self::Html => ".html",
-      Self::Markdown => ".md",
-      Self::Sql => ".sql",
-      // We transform Wasm to a declaration file.
-      Self::Wasm => ".d.mts",
-      // TypeScript doesn't have an "source map", so we will treat SourceMap as
-      // JS for mapping purposes, though in reality, it is unlikely to ever be
-      // passed to the compiler.
-      Self::SourceMap => ".js",
-      // TypeScript doesn't have an "unknown", so we will treat unknowns as JS
-      // for mapping purposes, though in reality, it is unlikely to ever be
-      // passed to the compiler.
-      Self::Unknown => ".js",
-    }
-  }
-
   /// Returns `None` only for `MediaType::Unknown`.
   /// There is no 1:1 mapping between content types and MediaType.
   /// Specifically, for some `MediaType m`
